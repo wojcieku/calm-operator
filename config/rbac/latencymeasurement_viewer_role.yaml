@@ -1,0 +1,27 @@
+# permissions for end users to view latencymeasurements.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: latencymeasurement-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: calm-operator
+    app.kubernetes.io/part-of: calm-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: latencymeasurement-viewer-role
+rules:
+- apiGroups:
+  - measurement.calm.com
+  resources:
+  - latencymeasurements
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - measurement.calm.com
+  resources:
+  - latencymeasurements/status
+  verbs:
+  - get
