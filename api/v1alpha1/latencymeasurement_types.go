@@ -22,26 +22,38 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// LatencyMeasurementSpec nested structs
 type Server struct {
-	Port      int    `json:"port,omitempty"`
 	Node      string `json:"node,omitempty"`
 	IpAddress string `json:"ip_address,omitempty"`
+	Port      int    `json:"port,omitempty"`
+}
+
+type Client struct {
+	Node              string `json:"node,omitempty"`
+	IpAddress         string `json:"ip_address,omitempty"`
+	Port              int    `json:"port,omitempty"`
+	Interval          int    `json:"interval,omitempty"`
+	Duration          int    `json:"duration,omitempty"`
+	MetricsAggregator string `json:"metricsAggregator,omitempty"`
+}
+
+type State struct {
+	Info    string `json:"info,omitempty"`
+	Details string `json:"details,omitempty"`
 }
 
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement
 type LatencyMeasurementSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of LatencyMeasurement. Edit latencymeasurement_types.go to remove/update
 	Side    string   `json:"foo,omitempty"`
 	Servers []Server `json:"servers,omitempty"`
+	Clients []Client `json:"clients,omitempty"`
 }
 
 // LatencyMeasurementStatus defines the observed state of LatencyMeasurement
 type LatencyMeasurementStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	State State `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true
