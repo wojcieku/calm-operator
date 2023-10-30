@@ -18,24 +18,41 @@ package controllers
 
 import (
 	"context"
-
+	"errors"
+	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
+	handlers "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/controllers/handlers"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+const (
+	SERVER       = "SERVER"
+	CLIENT       = "CLIENT"
+	SERVER_IMAGE = "jwojciech/udp_probe_server"
+	CLIENT_IMAGE = "jwojciech/udp_probe_client"
+)
+
+var logger = logf.Log.WithName("global")
 
 // LatencyMeasurementReconciler reconciles a LatencyMeasurement object
 type LatencyMeasurementReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme  *runtime.Scheme
+	handler handlers.LatencyMeasurementHandler
 }
 
 //+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -47,9 +64,39 @@ type LatencyMeasurementReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// TODO z requesta wiadomo ktory to CR -> trzeba wykminic identyfikacje pozostalych zasobow
+	measurement := &measurementv1alpha1.LatencyMeasurement{}
+	err := r.Get(ctx, req.NamespacedName, measurement)
+
+	if err != nil || len(measurement.Name) == 0 {
+		logger.Error(err, "Error during LM get:")
+		return ctrl.Result{}, nil
+	}
+
+	switch side := measurement.Spec.Side; side {
+	case SERVER:
+		r.handler = &handlers.ServerSideHandler{}
+	case CLIENT:
+		r.handler = &handlers.ClientSideHandler{}
+	default:
+		logger.Error(errors.New("Unknown side specified in LatencyMeasurement Spec with name: "), measurement.Name)
+		measurement.Status.State = measurementv1alpha1.State{Info: "Unknown specified in Spec", Details: "Expected Server or Client, got: " + side}
+
+		err = r.Update(ctx, measurement)
+		if err != nil {
+			logger.Error(err, "LM Status update failed")
+			return ctrl.Result{}, nil
+		}
+
+		return ctrl.Result{}, nil
+	}
+
+	err = r.handler.HandleLatencyMeasurement(measurement, r)
+	if err != nil {
+		//TODO err handle jakies lepsze
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -58,5 +105,8 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 func (r *LatencyMeasurementReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&measurementv1alpha1.LatencyMeasurement{}).
+		Owns(&batchv1.Job{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
