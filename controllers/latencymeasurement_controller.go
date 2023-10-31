@@ -29,11 +29,9 @@ import (
 )
 
 const (
-	SERVER       = "SERVER"
-	CLIENT       = "CLIENT"
-	SERVER_IMAGE = "jwojciech/udp_probe_server"
-	CLIENT_IMAGE = "jwojciech/udp_probe_client"
-	FAILURE      = "Failure"
+	SERVER  = "SERVER"
+	CLIENT  = "CLIENT"
+	FAILURE = "Failure"
 )
 
 var logger = logf.Log.WithName("global")
