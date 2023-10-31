@@ -35,12 +35,16 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 	var missingServers []measurementv1alpha1.Server
 	for _, server := range desiredServers {
 		completed := false
+		inProgress := false
 		for _, deployment := range currentDeploys.Items {
-			if deployment.Name == (measurement.Name+server.Node) && deployment.Status.ReadyReplicas == 1 {
-				completed = true
+			if deployment.Name == (measurement.Name + server.Node) {
+				inProgress = true
+				if deployment.Status.ReadyReplicas == 1 {
+					completed = true
+				}
 			}
 		}
-		if !completed {
+		if !completed && !inProgress {
 			missingServers = append(missingServers, server)
 		}
 	}
