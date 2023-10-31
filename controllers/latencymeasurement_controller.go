@@ -45,13 +45,13 @@ type LatencyMeasurementReconciler struct {
 	handler LatencyMeasurementHandler
 }
 
-//+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
-//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;update;patch;delete
+//+kubebuilder:rbac:groups=measurement.calm.com,namespace=calm-operator-system,resources=latencymeasurements,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=measurement.calm.com,namespace=calm-operator-system,resources=latencymeasurements/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=measurement.calm.com,namespace=calm-operator-system,resources=latencymeasurements/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,namespace=calm-operator-system,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=batch,namespace=calm-operator-system,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,namespace=calm-operator-system,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,namespace=calm-operator-system,resources=services,verbs=get;list;watch;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
