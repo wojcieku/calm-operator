@@ -7,6 +7,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 type ServerSideHandler struct {
@@ -33,19 +34,30 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 
 	//verify() - compare desired state with actual state
 	var missingServers []measurementv1alpha1.Server
+	deploysInProgressCounter := 0
 	for _, server := range desiredServers {
 		completed := false
 		inProgress := false
+
+		//TODO detect deployment failure
 		for _, deployment := range currentDeploys.Items {
-			if deployment.Name == (measurement.Name + server.Node) {
-				inProgress = true
+			for i, condition := range deployment.Status.Conditions {
+				logger.Info("Deployment condition " + strconv.Itoa(i) + ": " + condition.String())
+			}
+			if deployment.Name == (getDeploymentName(measurement, server)) {
+
+				logger.Info(strconv.Itoa(int(deployment.Status.ReadyReplicas)))
 				if deployment.Status.ReadyReplicas == 1 {
 					completed = true
+				} else {
+					inProgress = true
 				}
 			}
 		}
 		if !completed && !inProgress {
 			missingServers = append(missingServers, server)
+		} else if inProgress {
+			deploysInProgressCounter++
 		}
 	}
 	/* list services
@@ -60,8 +72,11 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 	//adjust() - perform actions if needed
 	//TODO set controller reference
 	for _, server := range missingServers {
-		deploymentName := measurement.Name + server.Node
+		deploymentName := getDeploymentName(measurement, server)
 		depl := utils.PrepareLatencyServerDeployment(deploymentName, server.Node, server.Port, measurement.Name)
+
+		//for k8s garbage collection
+		_ = ctrl.SetControllerReference(measurement, depl, r.Scheme)
 
 		err := r.Create(ctx, depl)
 		if err != nil {
@@ -72,10 +87,21 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 	//svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
 
 	//updateStatus() - set suitable status of CR
-	if len(missingServers) == 0 {
-		logger.Info("All server deployed successfully")
+	logger.Info("deploys in progress: " + strconv.Itoa(deploysInProgressCounter))
+	logger.Info("missing deploys: " + strconv.Itoa(len(missingServers)))
+	if len(missingServers) == 0 && deploysInProgressCounter == 0 {
+		logger.Info("All servers deployed successfully")
+		measurement.Status.State = SUCCESS
+		err := r.Status().Update(ctx, measurement)
+		if err != nil {
+			logger.Error(err, "LM Status update failed")
+		}
 	}
 	return nil
+}
+
+func getDeploymentName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
+	return measurement.Name + "-" + server.Node
 }
 
 //znalezienie obiektów w tym namespace i z takimi labelkami

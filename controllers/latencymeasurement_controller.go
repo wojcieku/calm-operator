@@ -26,11 +26,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"strings"
 )
 
 const (
-	SERVER  = "SERVER"
-	CLIENT  = "CLIENT"
+	SERVER  = "server"
+	CLIENT  = "client"
+	SUCCESS = "Success"
 	FAILURE = "Failure"
 )
 
@@ -66,8 +68,13 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 	measurement := &measurementv1alpha1.LatencyMeasurement{}
 	err := r.Get(ctx, req.NamespacedName, measurement)
 
-	if err != nil || len(measurement.Name) == 0 {
-		logger.Error(err, "Error during LM get:")
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			logger.Info("No LatencyMeasurements found")
+		} else {
+			logger.Error(err, "Error during LM get:")
+		}
+
 		return ctrl.Result{}, nil
 	}
 

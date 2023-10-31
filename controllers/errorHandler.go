@@ -14,8 +14,6 @@ func handleIncorrectSide(ctx context.Context, measurement *measurementv1alpha1.L
 		err := r.Status().Update(ctx, measurement)
 		if err != nil {
 			logger.Error(err, "LM Status update failed")
-		} else {
-			logger.Info("Status updated")
 		}
 	}
 }
