@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/controllers"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
-	"gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/controllers"
 	//+kubebuilder:scaffold:imports
 )
 

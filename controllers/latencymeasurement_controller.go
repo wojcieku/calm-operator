@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
-	handlers "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/controllers/handlers"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,7 +42,7 @@ var logger = logf.Log.WithName("global")
 type LatencyMeasurementReconciler struct {
 	client.Client
 	Scheme  *runtime.Scheme
-	handler handlers.LatencyMeasurementHandler
+	handler LatencyMeasurementHandler
 }
 
 //+kubebuilder:rbac:groups=measurement.calm.com,resources=latencymeasurements,verbs=get;list;watch;create;update;patch;delete
@@ -76,9 +75,9 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	switch side := measurement.Spec.Side; side {
 	case SERVER:
-		r.handler = &handlers.ServerSideHandler{}
+		r.handler = &ServerSideHandler{}
 	case CLIENT:
-		r.handler = &handlers.ClientSideHandler{}
+		r.handler = &ClientSideHandler{}
 	default:
 		logger.Error(errors.New("Unknown side specified in LatencyMeasurement Spec with name: "), measurement.Name)
 		measurement.Status.State = measurementv1alpha1.State{Info: "Unknown specified in Spec", Details: "Expected Server or Client, got: " + side}
