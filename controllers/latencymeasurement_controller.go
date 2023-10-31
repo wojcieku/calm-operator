@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -34,6 +33,7 @@ const (
 	CLIENT       = "CLIENT"
 	SERVER_IMAGE = "jwojciech/udp_probe_server"
 	CLIENT_IMAGE = "jwojciech/udp_probe_client"
+	FAILURE      = "Failure"
 )
 
 var logger = logf.Log.WithName("global")
@@ -79,19 +79,11 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 	case CLIENT:
 		r.handler = &ClientSideHandler{}
 	default:
-		logger.Error(errors.New("Unknown side specified in LatencyMeasurement Spec with name: "), measurement.Name)
-		measurement.Status.State = measurementv1alpha1.State{Info: "Unknown specified in Spec", Details: "Expected Server or Client, got: " + side}
-
-		err = r.Update(ctx, measurement)
-		if err != nil {
-			logger.Error(err, "LM Status update failed")
-			return ctrl.Result{}, nil
-		}
-
+		handleIncorrectSide(ctx, measurement, side, r)
 		return ctrl.Result{}, nil
 	}
 
-	err = r.handler.HandleLatencyMeasurement(measurement, r)
+	err = r.handler.HandleLatencyMeasurement(measurement, r, ctx, req)
 	if err != nil {
 		//TODO err handle jakies lepsze
 		return ctrl.Result{}, err

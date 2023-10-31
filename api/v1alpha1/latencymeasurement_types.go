@@ -39,21 +39,17 @@ type Client struct {
 	MetricsAggregator string `json:"metricsAggregator,omitempty"`
 }
 
-type State struct {
-	Info    string `json:"info,omitempty"`
-	Details string `json:"details,omitempty"`
-}
-
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement
 type LatencyMeasurementSpec struct {
-	Side    string   `json:"foo,omitempty"`
+	Side    string   `json:"side,omitempty"`
 	Servers []Server `json:"servers,omitempty"`
 	Clients []Client `json:"clients,omitempty"`
 }
 
 // LatencyMeasurementStatus defines the observed state of LatencyMeasurement
 type LatencyMeasurementStatus struct {
-	State State `json:"state,omitempty"`
+	State   string `json:"state,omitempty"`
+	Details string `json:"details,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -53,8 +53,6 @@ spec:
                       type: integer
                   type: object
                 type: array
-              foo:
-                type: string
               servers:
                 items:
                   description: LatencyMeasurementSpec nested structs
@@ -67,17 +65,16 @@ spec:
                       type: integer
                   type: object
                 type: array
+              side:
+                type: string
             type: object
           status:
             description: LatencyMeasurementStatus defines the observed state of LatencyMeasurement
             properties:
+              details:
+                type: string
               state:
-                properties:
-                  details:
-                    type: string
-                  info:
-                    type: string
-                type: object
+                type: string
             type: object
         type: object
     served: true
