@@ -40,6 +40,7 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 		return nil
 	}
 
+	//TODO implement services creation
 	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
 
 	// updateStatus() - set suitable status of CR
