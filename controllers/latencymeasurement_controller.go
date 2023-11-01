@@ -74,7 +74,10 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 		} else {
 			logger.Error(err, "Error during LM get:")
 		}
-
+		return ctrl.Result{}, nil
+	}
+	// stop reconciliation if state is failure already
+	if measurement.Status.State == FAILURE {
 		return ctrl.Result{}, nil
 	}
 
