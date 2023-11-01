@@ -30,10 +30,11 @@ import (
 )
 
 const (
-	SERVER  = "server"
-	CLIENT  = "client"
-	SUCCESS = "Success"
-	FAILURE = "Failure"
+	SERVER      = "server"
+	CLIENT      = "client"
+	SUCCESS     = "Success"
+	FAILURE     = "Failure"
+	IN_PROGRESS = "In Progress"
 )
 
 var logger = logf.Log.WithName("global")
@@ -63,7 +64,6 @@ type LatencyMeasurementReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
 	// TODO z requesta wiadomo ktory to CR -> trzeba wykminic identyfikacje pozostalych zasobow
 	measurement := &measurementv1alpha1.LatencyMeasurement{}
 	err := r.Get(ctx, req.NamespacedName, measurement)
@@ -89,9 +89,14 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	err = r.handler.HandleLatencyMeasurement(measurement, r, ctx, req)
+
 	if err != nil {
-		//TODO err handle jakies lepsze
-		return ctrl.Result{}, err
+		measurement.Status = measurementv1alpha1.LatencyMeasurementStatus{State: FAILURE, Details: err.Error()}
+		err := r.Status().Update(ctx, measurement)
+		if err != nil {
+			logger.Error(err, "Failed to update status after handle failure")
+		}
+		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{}, nil
