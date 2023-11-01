@@ -6,6 +6,7 @@ import (
 	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
 	"gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/controllers/utils"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
@@ -25,22 +26,57 @@ r.List(ctx, svcList, listOpts...)
 */
 type ServerSideHandler struct{}
 
-func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, ctx context.Context, req ctrl.Request) error {
-	//deployment name = CR name + nodeName
+func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
+	// every Server is mapped to Deployment and Service with name: <LatencyMeasurementName>-<NodeName>
 
 	// analyze() - list of desired deployments and services
 
 	desiredServers := measurement.Spec.Servers
 
-	deploymentComplete, err := handleServerDeployments(measurement, r, ctx, desiredServers)
+	deploymentComplete, err := handleServerDeployments(ctx, measurement, r, desiredServers)
 	if err != nil {
 		return err
 	}
 	if !deploymentComplete {
 		return nil
 	}
+	// TODO implement services creation
+	currentServices, err := getCurrentServices(ctx, measurement, r)
+	if err != nil {
+		return err
+	}
+	var missingServices []measurementv1alpha1.Server
+	for _, server := range desiredServers {
+		exists := false
+		for _, service := range currentServices.Items {
+			if service.Name == getServerObjectsName(measurement, server) {
+				// logi zeby zobaczyc co sie dzieje z servicem
+				for i, condition := range service.Status.Conditions {
+					logger.Info("Service condition #" + strconv.Itoa(i) + condition.String())
+				}
+				exists = true
+			}
+		}
+		if !exists {
+			missingServices = append(missingServices, server)
+		}
+	}
 
-	//TODO implement services creation
+	for _, server := range missingServices {
+		logger.Info("creating service for server")
+		serviceName := getServerObjectsName(measurement, server)
+		svc := utils.PrepareServiceForLatencyServer(server.IpAddress, server.Port, serviceName, serviceName, measurement.Name)
+
+		// for k8s garbage collection
+		_ = ctrl.SetControllerReference(measurement, svc, r.Scheme)
+
+		err := r.Create(ctx, svc)
+		if err != nil {
+			logger.Error(err, "Error during server deployment creation")
+			return err
+		}
+	}
+
 	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
 
 	// updateStatus() - set suitable status of CR
@@ -54,7 +90,7 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(measurement *measurem
 	return nil
 }
 
-func handleServerDeployments(measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, ctx context.Context, desiredServers []measurementv1alpha1.Server) (bool, error) {
+func handleServerDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) (bool, error) {
 	currentDeploys, err := getCurrentDeployments(ctx, measurement, r)
 	deployCompleted := false
 	if err != nil {
@@ -62,15 +98,16 @@ func handleServerDeployments(measurement *measurementv1alpha1.LatencyMeasurement
 	}
 
 	// verify() - compare desired state with actual state
-	missingServers, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
+	missingDeployments, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
 	if err != nil {
 		return false, err
 	}
 
 	// adjust() - perform actions if needed
-	for _, server := range missingServers {
+	// TODO extract creation
+	for _, server := range missingDeployments {
 		logger.Info("creating server deployment")
-		deploymentName := getDeploymentName(measurement, server)
+		deploymentName := getServerObjectsName(measurement, server)
 		depl := utils.PrepareLatencyServerDeployment(deploymentName, server.Node, server.Port, measurement.Name)
 
 		// for k8s garbage collection
@@ -83,8 +120,8 @@ func handleServerDeployments(measurement *measurementv1alpha1.LatencyMeasurement
 		}
 	}
 	logger.Info("deploys in progress: " + strconv.Itoa(deploysInProgress))
-	logger.Info("missing deploys: " + strconv.Itoa(len(missingServers)))
-	if len(missingServers) == 0 && deploysInProgress == 0 {
+	logger.Info("missing deploys: " + strconv.Itoa(len(missingDeployments)))
+	if len(missingDeployments) == 0 && deploysInProgress == 0 {
 		deployCompleted = true
 	}
 	return deployCompleted, nil
@@ -105,15 +142,30 @@ func getCurrentDeployments(ctx context.Context, measurement *measurementv1alpha1
 	return currentDeploys, nil
 }
 
+func getCurrentServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) (*corev1.ServiceList, error) {
+	currentServices := &corev1.ServiceList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(measurement.Namespace),
+		client.MatchingLabels{utils.LABEL_KEY: measurement.GetName()},
+	}
+	err := r.List(ctx, currentServices, listOpts...)
+	if err != nil {
+		logger.Error(err, "Error during listing deployments")
+		return nil, err
+	}
+	logger.Info("Current deployments: " + currentServices.String())
+	return currentServices, nil
+}
+
 func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desiredServers []measurementv1alpha1.Server, currentDeploys *appsv1.DeploymentList) ([]measurementv1alpha1.Server, int, error) {
-	var missingServers []measurementv1alpha1.Server
+	var missingDeployments []measurementv1alpha1.Server
 	deploysInProgress := 0
 
 	var err error
 	for _, server := range desiredServers {
 		exists := false
 		for _, deployment := range currentDeploys.Items {
-			if deployment.Name == (getDeploymentName(measurement, server)) {
+			if deployment.Name == (getServerObjectsName(measurement, server)) {
 				exists = true
 				// deployment initial conditions are empty
 				if deployment.Status.Conditions == nil {
@@ -135,13 +187,13 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 			}
 		}
 		if !exists {
-			missingServers = append(missingServers, server)
+			missingDeployments = append(missingDeployments, server)
 		}
 	}
-	return missingServers, deploysInProgress, err
+	return missingDeployments, deploysInProgress, err
 }
 
-func getDeploymentName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
+func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
 	return measurement.Name + "-" + server.Node
 }
 

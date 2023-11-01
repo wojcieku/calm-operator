@@ -91,7 +91,7 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, nil
 	}
 
-	err = r.handler.HandleLatencyMeasurement(measurement, r, ctx, req)
+	err = r.handler.HandleLatencyMeasurement(ctx, measurement, r)
 
 	if err != nil {
 		measurement.Status = measurementv1alpha1.LatencyMeasurementStatus{State: FAILURE, Details: err.Error()}
