@@ -43,6 +43,7 @@ rules:
   resources:
   - services
   verbs:
+  - create
   - delete
   - get
   - list

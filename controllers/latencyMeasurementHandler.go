@@ -11,6 +11,9 @@ const (
 	TRUE            = "True"
 	FALSE           = "False"
 	REASON_COMPLETE = "NewReplicaSetAvailable"
+	PENDING         = "Pending"
+	POD_SCHEDULED   = "PodScheduled"
+	UNSCHEDULABLE   = "Unschedulable"
 )
 
 type LatencyMeasurementHandler interface {

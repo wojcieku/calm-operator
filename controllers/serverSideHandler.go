@@ -12,18 +12,7 @@ import (
 	"strconv"
 )
 
-/*
-	list services
-
-svcList := &corev1.ServiceList{}
-
-	listOpts := []client.ListOption{
-		client.InNamespace(measurement.Namespace),
-		client.MatchingLabels{utils.LABEL_KEY : measurement.GetName()},
-	}
-
-r.List(ctx, svcList, listOpts...)
-*/
+// TODO obsluga deployment stuck in pending?
 type ServerSideHandler struct{}
 
 func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
@@ -40,7 +29,7 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	if !deploymentComplete {
 		return nil
 	}
-	// TODO implement services creation
+	logger.Info("Entering SVC part")
 	currentServices, err := getCurrentServices(ctx, measurement, r)
 	if err != nil {
 		return err
@@ -50,10 +39,6 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 		exists := false
 		for _, service := range currentServices.Items {
 			if service.Name == getServerObjectsName(measurement, server) {
-				// logi zeby zobaczyc co sie dzieje z servicem
-				for i, condition := range service.Status.Conditions {
-					logger.Info("Service condition #" + strconv.Itoa(i) + condition.String())
-				}
 				exists = true
 			}
 		}
@@ -80,11 +65,13 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
 
 	// updateStatus() - set suitable status of CR
-	logger.Info("All servers and services deployed successfully")
-	measurement.Status.State = SUCCESS
-	err = r.Status().Update(ctx, measurement)
-	if err != nil {
-		logger.Error(err, "LM Status update failed")
+	if len(missingServices) == 0 {
+		logger.Info("All servers and services deployed successfully")
+		measurement.Status.State = SUCCESS
+		err = r.Status().Update(ctx, measurement)
+		if err != nil {
+			logger.Error(err, "LM Status update failed")
+		}
 	}
 
 	return nil
@@ -121,8 +108,35 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 	}
 	logger.Info("deploys in progress: " + strconv.Itoa(deploysInProgress))
 	logger.Info("missing deploys: " + strconv.Itoa(len(missingDeployments)))
-	if len(missingDeployments) == 0 && deploysInProgress == 0 {
-		deployCompleted = true
+	if len(missingDeployments) == 0 {
+		if deploysInProgress == 0 {
+			deployCompleted = true
+		} else {
+			// TODO check pods statuses
+			podsList := &corev1.PodList{}
+			listOpts := []client.ListOption{
+				client.InNamespace(measurement.Namespace),
+			}
+			err := r.List(ctx, podsList, listOpts...)
+			if err != nil {
+				logger.Error(err, "Error during listing pods")
+			}
+			for _, pod := range podsList.Items {
+				for _, server := range desiredServers {
+					logger.Info("name: " + getServerObjectsName(measurement, server))
+					logger.Info("label" + pod.ObjectMeta.GetLabels()["app"])
+					if pod.ObjectMeta.GetLabels()["app"] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
+						for _, condition := range pod.Status.Conditions {
+							if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
+								logger.Info("POD UNSCHEDULABLE")
+								// TODO return err and set status
+							}
+						}
+						logger.Info("found matching pod for CR")
+					}
+				}
+			}
+		}
 	}
 	return deployCompleted, nil
 }
@@ -138,7 +152,7 @@ func getCurrentDeployments(ctx context.Context, measurement *measurementv1alpha1
 		logger.Error(err, "Error during listing deployments")
 		return nil, err
 	}
-	logger.Info("Current deployments: " + currentDeploys.String())
+	//logger.Info("Current deployments: " + currentDeploys.String())
 	return currentDeploys, nil
 }
 
@@ -150,10 +164,10 @@ func getCurrentServices(ctx context.Context, measurement *measurementv1alpha1.La
 	}
 	err := r.List(ctx, currentServices, listOpts...)
 	if err != nil {
-		logger.Error(err, "Error during listing deployments")
+		logger.Error(err, "Error during listing services")
 		return nil, err
 	}
-	logger.Info("Current deployments: " + currentServices.String())
+	logger.Info("Current services: " + currentServices.String())
 	return currentServices, nil
 }
 
@@ -171,7 +185,7 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 				if deployment.Status.Conditions == nil {
 					deploysInProgress++
 				}
-				for i, condition := range deployment.Status.Conditions {
+				for _, condition := range deployment.Status.Conditions {
 					if condition.Type == PROGRESSING {
 						switch condition.Status {
 						case TRUE:
@@ -182,7 +196,7 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 							err = errors.New("servers deployment failed")
 						}
 					}
-					logger.Info("Deployment condition " + strconv.Itoa(i) + ": " + condition.String())
+					//logger.Info("Deployment condition " + strconv.Itoa(i) + ": " + condition.String())
 				}
 			}
 		}
