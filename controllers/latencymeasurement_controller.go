@@ -64,7 +64,6 @@ type LatencyMeasurementReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO z requesta wiadomo ktory to CR -> trzeba wykminic identyfikacje pozostalych zasobow
 	measurement := &measurementv1alpha1.LatencyMeasurement{}
 	err := r.Get(ctx, req.NamespacedName, measurement)
 
@@ -76,6 +75,7 @@ func (r *LatencyMeasurementReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 		return ctrl.Result{}, nil
 	}
+
 	// stop reconciliation if state is failure already
 	if measurement.Status.State == FAILURE {
 		return ctrl.Result{}, nil

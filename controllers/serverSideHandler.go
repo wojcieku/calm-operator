@@ -12,41 +12,68 @@ import (
 	"strconv"
 )
 
-// TODO obsluga deployment stuck in pending?
 type ServerSideHandler struct{}
 
+// HandleLatencyMeasurement - create Deployments and Services objects based on Measurement description.
+// Objects' names are created according to pattern: Measurement.Name-NodeName.
+// If creation fails at any stage, error is returned and for further handle.
+// Objects are grouped with labels ["measurement" : LatencyMeasurement.Name].
 func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
-	// every Server is mapped to Deployment and Service with name: <LatencyMeasurementName>-<NodeName>
 
 	// analyze() - list of desired deployments and services
-
 	desiredServers := measurement.Spec.Servers
 
+	logger.Info("Entering Deployment part")
 	deploymentComplete, err := handleServerDeployments(ctx, measurement, r, desiredServers)
 	if err != nil {
 		return err
 	}
 	if !deploymentComplete {
+		// no error, wait for next reconciliation iteration
 		return nil
 	}
+
 	logger.Info("Entering SVC part")
-	currentServices, err := getCurrentServices(ctx, measurement, r)
+	servicesCreationComplete, err := handleServerServices(ctx, measurement, r, err, desiredServers)
 	if err != nil {
 		return err
 	}
-	var missingServices []measurementv1alpha1.Server
-	for _, server := range desiredServers {
-		exists := false
-		for _, service := range currentServices.Items {
-			if service.Name == getServerObjectsName(measurement, server) {
-				exists = true
-			}
-		}
-		if !exists {
-			missingServices = append(missingServices, server)
+	if !servicesCreationComplete {
+		return nil
+	}
+
+	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
+
+	// updateStatus() - set suitable status of CR
+	if servicesCreationComplete && measurement.Status.State != SUCCESS {
+		logger.Info("All servers and services deployed successfully")
+		measurement.Status.State = SUCCESS
+		err = r.Status().Update(ctx, measurement)
+		if err != nil {
+			logger.Error(err, "LM Status update failed")
 		}
 	}
 
+	return nil
+}
+
+func handleServerServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, err error, desiredServers []measurementv1alpha1.Server) (bool, error) {
+	missingServices, err := verifyServices(ctx, measurement, r, desiredServers)
+	serviceCreationComplete := false
+	if err != nil {
+		return false, err
+	}
+	err = createMissingServices(ctx, measurement, r, missingServices)
+	if err != nil {
+		return false, err
+	}
+	if len(missingServices) == 0 {
+		serviceCreationComplete = true
+	}
+	return serviceCreationComplete, nil
+}
+
+func createMissingServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingServices []measurementv1alpha1.Server) error {
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
 		serviceName := getServerObjectsName(measurement, server)
@@ -61,20 +88,27 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 			return err
 		}
 	}
+	return nil
+}
 
-	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
-
-	// updateStatus() - set suitable status of CR
-	if len(missingServices) == 0 {
-		logger.Info("All servers and services deployed successfully")
-		measurement.Status.State = SUCCESS
-		err = r.Status().Update(ctx, measurement)
-		if err != nil {
-			logger.Error(err, "LM Status update failed")
+func verifyServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) ([]measurementv1alpha1.Server, error) {
+	currentServices, err := getCurrentServices(ctx, measurement, r)
+	if err != nil {
+		return nil, err
+	}
+	var missingServices []measurementv1alpha1.Server
+	for _, server := range desiredServers {
+		exists := false
+		for _, service := range currentServices.Items {
+			if service.Name == getServerObjectsName(measurement, server) {
+				exists = true
+			}
+		}
+		if !exists {
+			missingServices = append(missingServices, server)
 		}
 	}
-
-	return nil
+	return missingServices, nil
 }
 
 func handleServerDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) (bool, error) {
@@ -84,14 +118,63 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 		return false, err
 	}
 
-	// verify() - compare desired state with actual state
+	// verify - compare desired state with actual state
 	missingDeployments, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
 	if err != nil {
 		return false, err
 	}
 
 	// adjust() - perform actions if needed
-	// TODO extract creation
+	err = createMissingDeployments(ctx, measurement, r, missingDeployments)
+	if err != nil {
+		return false, err
+	}
+
+	logger.Info("deploys in progress: " + strconv.Itoa(deploysInProgress))
+	logger.Info("missing deploys: " + strconv.Itoa(len(missingDeployments)))
+
+	if len(missingDeployments) == 0 {
+		if deploysInProgress == 0 {
+			deployCompleted = true
+		} else {
+			// check if any Pod schedule failed
+			err = checkPodScheduleStatus(ctx, measurement, r, desiredServers)
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+	return deployCompleted, nil
+}
+
+// Returns error with details if any Pod failed to be scheduled.
+func checkPodScheduleStatus(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) error {
+	podsList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(measurement.Namespace),
+	}
+	err := r.List(ctx, podsList, listOpts...)
+	if err != nil {
+		logger.Error(err, "Error during listing pods")
+		return err
+	}
+	for _, pod := range podsList.Items {
+		for _, server := range desiredServers {
+			if pod.ObjectMeta.GetLabels()["app"] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
+				for _, condition := range pod.Status.Conditions {
+					if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
+						logger.Info("POD UNSCHEDULABLE")
+						err = errors.New("Pod unschedulable for deployment: " + pod.ObjectMeta.GetLabels()["app"])
+						return err
+					}
+				}
+			}
+		}
+	}
+	return err
+}
+
+func createMissingDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingDeployments []measurementv1alpha1.Server) error {
 	for _, server := range missingDeployments {
 		logger.Info("creating server deployment")
 		deploymentName := getServerObjectsName(measurement, server)
@@ -103,42 +186,10 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 		err := r.Create(ctx, depl)
 		if err != nil {
 			logger.Error(err, "Error during server deployment creation")
-			return false, err
+			return err
 		}
 	}
-	logger.Info("deploys in progress: " + strconv.Itoa(deploysInProgress))
-	logger.Info("missing deploys: " + strconv.Itoa(len(missingDeployments)))
-	if len(missingDeployments) == 0 {
-		if deploysInProgress == 0 {
-			deployCompleted = true
-		} else {
-			// TODO check pods statuses
-			podsList := &corev1.PodList{}
-			listOpts := []client.ListOption{
-				client.InNamespace(measurement.Namespace),
-			}
-			err := r.List(ctx, podsList, listOpts...)
-			if err != nil {
-				logger.Error(err, "Error during listing pods")
-			}
-			for _, pod := range podsList.Items {
-				for _, server := range desiredServers {
-					logger.Info("name: " + getServerObjectsName(measurement, server))
-					logger.Info("label" + pod.ObjectMeta.GetLabels()["app"])
-					if pod.ObjectMeta.GetLabels()["app"] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
-						for _, condition := range pod.Status.Conditions {
-							if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
-								logger.Info("POD UNSCHEDULABLE")
-								// TODO return err and set status
-							}
-						}
-						logger.Info("found matching pod for CR")
-					}
-				}
-			}
-		}
-	}
-	return deployCompleted, nil
+	return nil
 }
 
 func getCurrentDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) (*appsv1.DeploymentList, error) {
