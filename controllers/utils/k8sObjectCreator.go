@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strconv"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 	SERVER_IMAGE            = "jwojciech/udp_probe_server"
 	CLIENT_IMAGE            = "jwojciech/udp_probe_client"
 	NODE_SELECTOR_HOST_NAME = "kubernetes.io/hostname"
+	PORT                    = "PORT"
 )
 
 func PrepareLatencyServerDeployment(deploymentName string, nodeName string, port int, label string) *appsv1.Deployment {
@@ -48,6 +50,7 @@ func PrepareLatencyServerDeployment(deploymentName string, nodeName string, port
 									ContainerPort: int32(port),
 								},
 							},
+							Env: []corev1.EnvVar{{Name: PORT, Value: strconv.Itoa(port)}},
 						},
 					},
 					NodeSelector: map[string]string{NODE_SELECTOR_HOST_NAME: nodeName},
@@ -55,9 +58,6 @@ func PrepareLatencyServerDeployment(deploymentName string, nodeName string, port
 			},
 		},
 	}
-
-	//bind the deployment to this custom resource instance
-	//err := ctrl.SetControllerReference(serverStruct, serverDeployment, r.Scheme)
 
 	return deployment
 }
