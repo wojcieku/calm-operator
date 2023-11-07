@@ -44,7 +44,6 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 				if job.Status.Succeeded != 1 {
 					inProgress = true
 				}
-
 			}
 			if !exists {
 				missingClients = append(missingClients, c)

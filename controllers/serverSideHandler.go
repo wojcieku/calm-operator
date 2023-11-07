@@ -19,8 +19,6 @@ type ServerSideHandler struct{}
 // If creation fails at any stage, error is returned and for further handle.
 // Objects are grouped with labels ["measurement" : LatencyMeasurement.Name].
 func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
-
-	// analyze() - list of desired deployments and services
 	desiredServers := measurement.Spec.Servers
 
 	logger.Info("Entering Deployment part")
@@ -34,7 +32,7 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	}
 
 	logger.Info("Entering SVC part")
-	servicesCreationComplete, err := handleServerServices(ctx, measurement, r, err, desiredServers)
+	servicesCreationComplete, err := handleServerServices(ctx, measurement, r, desiredServers)
 	if err != nil {
 		return err
 	}
@@ -55,7 +53,7 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	return nil
 }
 
-func handleServerServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, err error, desiredServers []measurementv1alpha1.Server) (bool, error) {
+func handleServerServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) (bool, error) {
 	missingServices, err := verifyServices(ctx, measurement, r, desiredServers)
 	serviceCreationComplete := false
 	if err != nil {
@@ -201,7 +199,7 @@ func getCurrentDeployments(ctx context.Context, measurement *measurementv1alpha1
 		logger.Error(err, "Error during listing deployments")
 		return nil, err
 	}
-	//logger.Info("Current deployments: " + currentDeploys.String())
+	// logger.Info("Current deployments: " + currentDeploys.String())
 	return currentDeploys, nil
 }
 
@@ -245,7 +243,6 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 							err = errors.New("servers deployment failed")
 						}
 					}
-					//logger.Info("Deployment condition " + strconv.Itoa(i) + ": " + condition.String())
 				}
 			}
 		}
@@ -259,9 +256,3 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
 	return measurement.Name + "-" + server.Node
 }
-
-//znalezienie obiektów w tym namespace i z takimi labelkami
-//listOpts := []client.ListOption{
-//	client.InNamespace(memcached.Namespace),
-//	client.MatchingLabels(),
-//}
