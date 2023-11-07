@@ -39,6 +39,10 @@ type Client struct {
 	MetricsAggregator string `json:"metricsAggregator,omitempty"`
 }
 
+//func (c *Client) String() string {
+//	return fmt.Sprintf("Client: {Node: %s, IpAddress: %s, Port: %s, Interval: %s, Duration: %s", c.Node, c.IpAddress, strconv.Itoa(c.Port), strconv.Itoa(c.Interval), strconv.Itoa(c.Duration))
+//}
+
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement
 type LatencyMeasurementSpec struct {
 	Side    string   `json:"side,omitempty"`

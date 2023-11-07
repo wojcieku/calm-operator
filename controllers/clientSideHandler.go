@@ -30,6 +30,7 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	// create Jobs if missing
 	err = createMissingJobs(ctx, measurement, r, missingClients)
 	if err != nil {
+		logger.Error(err, "Error during listing Jobs")
 		return err
 	}
 
@@ -67,15 +68,17 @@ func verifyJobs(desiredClients []measurementv1alpha1.Client, currentJobs *batchv
 				logger.Info("Job " + job.Name + " status: " + job.Status.String())
 				if job.Status.Failed == 1 {
 					err := errors.New("Job failed for client: " + job.Name)
+					logger.Error(err, "Job execution error")
+					// TODO pobranie logow poda?
 					return nil, inProgress, err
 				}
 				if job.Status.Succeeded != 1 {
 					inProgress = true
 				}
 			}
-			if !exists {
-				missingClients = append(missingClients, c)
-			}
+		}
+		if !exists {
+			missingClients = append(missingClients, c)
 		}
 	}
 	return missingClients, inProgress, nil
