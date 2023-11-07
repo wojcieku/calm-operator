@@ -15,7 +15,6 @@ type ClientSideHandler struct {
 
 func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
 	desiredClients := measurement.Spec.Clients
-
 	// getJobs
 	currentJobs := &batchv1.JobList{}
 	listOpts := []client.ListOption{
@@ -39,15 +38,17 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 				logger.Info("Job " + job.Name + " status: " + job.Status.String())
 				if job.Status.Failed == 1 {
 					err = errors.New("Job failed for client: " + job.Name)
+					logger.Error(err, "Job execution error")
+					// TODO pobranie logow poda?
 					return err
 				}
 				if job.Status.Succeeded != 1 {
 					inProgress = true
 				}
 			}
-			if !exists {
-				missingClients = append(missingClients, c)
-			}
+		}
+		if !exists {
+			missingClients = append(missingClients, c)
 		}
 	}
 

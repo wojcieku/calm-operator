@@ -20,6 +20,7 @@ const (
 	INTERVAL                = "INTERVAL"
 	DURATION                = "DURATION"
 	PORT                    = "PORT"
+	APP                     = "app"
 )
 
 func PrepareLatencyServerDeployment(deploymentName string, label string, nodeName string, port int) *appsv1.Deployment {
@@ -34,13 +35,13 @@ func PrepareLatencyServerDeployment(deploymentName string, label string, nodeNam
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": deploymentName,
+					APP: deploymentName,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": deploymentName,
+						APP: deploymentName,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -67,6 +68,7 @@ func PrepareLatencyServerDeployment(deploymentName string, label string, nodeNam
 }
 
 func PrepareServiceForLatencyServer(svcName string, label string, deploymentName string, ip string, port int) *corev1.Service {
+
 	svc := &corev1.Service{ObjectMeta: metav1.ObjectMeta{
 		Name:      svcName,
 		Namespace: NAMESPACE,
@@ -83,7 +85,7 @@ func PrepareServiceForLatencyServer(svcName string, label string, deploymentName
 				},
 			},
 			Selector: map[string]string{
-				"apps": deploymentName,
+				APP: deploymentName,
 			},
 			ExternalIPs: []string{ip},
 		},
@@ -94,7 +96,7 @@ func PrepareServiceForLatencyServer(svcName string, label string, deploymentName
 func PrepareJobForLatencyClient(jobName string, label string, ip string, port int, interval int, duration int) *batchv1.Job {
 	envs := prepareEnvs(ip, port, interval, duration)
 
-	var backOffLimit int32 = 1
+	var backOffLimit int32 = 0
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobName,

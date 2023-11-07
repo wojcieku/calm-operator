@@ -156,11 +156,11 @@ func checkPodScheduleStatus(ctx context.Context, measurement *measurementv1alpha
 	}
 	for _, pod := range podsList.Items {
 		for _, server := range desiredServers {
-			if pod.ObjectMeta.GetLabels()["app"] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
+			if pod.ObjectMeta.GetLabels()[utils.APP] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
 				for _, condition := range pod.Status.Conditions {
 					if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
 						logger.Info("POD UNSCHEDULABLE")
-						err = errors.New("Pod unschedulable for deployment: " + pod.ObjectMeta.GetLabels()["app"])
+						err = errors.New("Pod unschedulable for deployment: " + pod.ObjectMeta.GetLabels()[utils.APP])
 						return err
 					}
 				}
@@ -214,7 +214,6 @@ func getCurrentServices(ctx context.Context, measurement *measurementv1alpha1.La
 		logger.Error(err, "Error during listing services")
 		return nil, err
 	}
-	logger.Info("Current services: " + currentServices.String())
 	return currentServices, nil
 }
 
