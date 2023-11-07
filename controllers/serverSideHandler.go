@@ -43,13 +43,8 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	// updateStatus() - set suitable status of CR
 	if servicesCreationComplete && measurement.Status.State != SUCCESS {
 		logger.Info("All servers and services deployed successfully")
-		measurement.Status.State = SUCCESS
-		err = r.Status().Update(ctx, measurement)
-		if err != nil {
-			logger.Error(err, "LM Status update failed")
-		}
+		updateStatusSuccess(ctx, measurement, r)
 	}
-
 	return nil
 }
 
@@ -199,7 +194,6 @@ func getCurrentDeployments(ctx context.Context, measurement *measurementv1alpha1
 		logger.Error(err, "Error during listing deployments")
 		return nil, err
 	}
-	// logger.Info("Current deployments: " + currentDeploys.String())
 	return currentDeploys, nil
 }
 
