@@ -42,8 +42,6 @@ func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 		return nil
 	}
 
-	// svc := utils.CreateService(measurement.Spec.Servers[0].IpAddress, )
-
 	// updateStatus() - set suitable status of CR
 	if servicesCreationComplete && measurement.Status.State != SUCCESS {
 		logger.Info("All servers and services deployed successfully")
@@ -77,7 +75,7 @@ func createMissingServices(ctx context.Context, measurement *measurementv1alpha1
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
 		serviceName := getServerObjectsName(measurement, server)
-		svc := utils.PrepareServiceForLatencyServer(server.IpAddress, server.Port, serviceName, serviceName, measurement.Name)
+		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.IpAddress, server.Port)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, svc, r.Scheme)
@@ -178,7 +176,7 @@ func createMissingDeployments(ctx context.Context, measurement *measurementv1alp
 	for _, server := range missingDeployments {
 		logger.Info("creating server deployment")
 		deploymentName := getServerObjectsName(measurement, server)
-		depl := utils.PrepareLatencyServerDeployment(deploymentName, server.Node, server.Port, measurement.Name)
+		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, depl, r.Scheme)
