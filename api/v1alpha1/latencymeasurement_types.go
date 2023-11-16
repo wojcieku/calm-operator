@@ -26,13 +26,13 @@ import (
 // LatencyMeasurementSpec nested structs
 type Server struct {
 	Node      string `json:"node,omitempty"`
-	IpAddress string `json:"ip_address,omitempty"`
+	IPAddress string `json:"ipAddress,omitempty"`
 	Port      int    `json:"port,omitempty"`
 }
 
 type Client struct {
 	Node              string `json:"node,omitempty"`
-	IpAddress         string `json:"ip_address,omitempty"`
+	IPAddress         string `json:"ipAddress,omitempty"`
 	Port              int    `json:"port,omitempty"`
 	Interval          int    `json:"interval,omitempty"`
 	Duration          int    `json:"duration,omitempty"`
@@ -40,7 +40,7 @@ type Client struct {
 }
 
 //func (c *Client) String() string {
-//	return fmt.Sprintf("Client: {Node: %s, IpAddress: %s, Port: %s, Interval: %s, Duration: %s", c.Node, c.IpAddress, strconv.Itoa(c.Port), strconv.Itoa(c.Interval), strconv.Itoa(c.Duration))
+//	return fmt.Sprintf("Client: {Node: %s, IPAddress: %s, Port: %s, Interval: %s, Duration: %s", c.Node, c.IPAddress, strconv.Itoa(c.Port), strconv.Itoa(c.Interval), strconv.Itoa(c.Duration))
 //}
 
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement

@@ -68,7 +68,7 @@ func createMissingServices(ctx context.Context, measurement *measurementv1alpha1
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
 		serviceName := getServerObjectsName(measurement, server)
-		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.IpAddress, server.Port)
+		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.IPAddress, server.Port)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, svc, r.Scheme)
