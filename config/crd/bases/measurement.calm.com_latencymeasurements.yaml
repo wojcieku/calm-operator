@@ -43,7 +43,7 @@ spec:
                       type: integer
                     interval:
                       type: integer
-                    ip_address:
+                    ipAddress:
                       type: string
                     metricsAggregator:
                       type: string
@@ -57,7 +57,7 @@ spec:
                 items:
                   description: LatencyMeasurementSpec nested structs
                   properties:
-                    ip_address:
+                    ipAddress:
                       type: string
                     node:
                       type: string
