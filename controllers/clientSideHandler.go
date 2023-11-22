@@ -33,6 +33,7 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 		logger.Error(err, "Error during listing Jobs")
 		return err
 	}
+	// TODO check pods schedule status
 
 	// set success status if all jobs succeeded
 	if len(missingClients) == 0 && !inProgress && measurement.Status.State != SUCCESS {
