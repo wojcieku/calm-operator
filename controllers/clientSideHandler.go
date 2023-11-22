@@ -44,7 +44,7 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 
 func createMissingJobs(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingClients []measurementv1alpha1.Client) error {
 	for _, missingClient := range missingClients {
-		job := utils.PrepareJobForLatencyClient(getClientObjectsName(measurement, missingClient), measurement.Name,
+		job := utils.PrepareJobForLatencyClient(getClientObjectsName(measurement, missingClient), missingClient.Node, measurement.Name,
 			missingClient.IPAddress, missingClient.Port, missingClient.Interval, missingClient.Duration)
 
 		_ = ctrl.SetControllerReference(measurement, job, r.Scheme)
