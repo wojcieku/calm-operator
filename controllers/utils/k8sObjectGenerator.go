@@ -93,7 +93,7 @@ func PrepareServiceForLatencyServer(svcName string, label string, deploymentName
 	return svc
 }
 
-func PrepareJobForLatencyClient(jobName string, label string, ip string, port int, interval int, duration int) *batchv1.Job {
+func PrepareJobForLatencyClient(jobName string, nodeName string, label string, ip string, port int, interval int, duration int) *batchv1.Job {
 	envs := prepareEnvs(ip, port, interval, duration)
 
 	var backOffLimit int32 = 0
@@ -113,6 +113,7 @@ func PrepareJobForLatencyClient(jobName string, label string, ip string, port in
 							Env:   envs,
 						},
 					},
+					NodeSelector:  map[string]string{NODE_SELECTOR_HOST_NAME: nodeName},
 					RestartPolicy: corev1.RestartPolicyNever,
 				},
 			},
