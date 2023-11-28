@@ -129,7 +129,7 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 			deployCompleted = true
 		} else {
 			// check if any Pod schedule failed
-			err = checkPodScheduleStatus(ctx, measurement, r, desiredServers)
+			err = checkServerPodsScheduleStatus(ctx, measurement, r, desiredServers)
 			if err != nil {
 				return false, err
 			}
@@ -139,7 +139,7 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 }
 
 // Returns error with details if any Pod failed to be scheduled.
-func checkPodScheduleStatus(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) error {
+func checkServerPodsScheduleStatus(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) error {
 	podsList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(measurement.Namespace),
