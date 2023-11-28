@@ -117,8 +117,8 @@ func checkClientPodsScheduleStatus(ctx context.Context, measurement *measurement
 		return err
 	}
 	for _, pod := range podsList.Items {
-		for _, client := range desiredClients {
-			if pod.ObjectMeta.GetLabels()[utils.APP] == getClientObjectsName(measurement, client) && pod.Status.Phase == PENDING {
+		for _, c := range desiredClients {
+			if pod.ObjectMeta.GetLabels()[utils.APP] == getClientObjectsName(measurement, c) && pod.Status.Phase == PENDING {
 				for _, condition := range pod.Status.Conditions {
 					if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
 						logger.Info("POD UNSCHEDULABLE")
