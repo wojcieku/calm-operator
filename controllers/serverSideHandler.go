@@ -67,7 +67,7 @@ func handleServerServices(ctx context.Context, measurement *measurementv1alpha1.
 func createMissingServices(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingServices []measurementv1alpha1.Server) error {
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
-		serviceName := getObjectName(measurement, server)
+		serviceName := getServerObjectsName(measurement, server)
 		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.IPAddress, server.Port)
 
 		// for k8s garbage collection
@@ -91,7 +91,7 @@ func verifyServices(ctx context.Context, measurement *measurementv1alpha1.Latenc
 	for _, server := range desiredServers {
 		exists := false
 		for _, service := range currentServices.Items {
-			if service.Name == getObjectName(measurement, server) {
+			if service.Name == getServerObjectsName(measurement, server) {
 				exists = true
 			}
 		}
@@ -138,10 +138,37 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 	return deployCompleted, nil
 }
 
+// Returns error with details if any Pod failed to be scheduled.
+func checkPodScheduleStatus(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, desiredServers []measurementv1alpha1.Server) error {
+	podsList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(measurement.Namespace),
+	}
+	err := r.List(ctx, podsList, listOpts...)
+	if err != nil {
+		logger.Error(err, "Error during listing pods")
+		return err
+	}
+	for _, pod := range podsList.Items {
+		for _, server := range desiredServers {
+			if pod.ObjectMeta.GetLabels()[utils.APP] == getServerObjectsName(measurement, server) && pod.Status.Phase == PENDING {
+				for _, condition := range pod.Status.Conditions {
+					if condition.Status == FALSE && condition.Reason == UNSCHEDULABLE {
+						logger.Info("POD UNSCHEDULABLE")
+						err = errors.New("Pod unschedulable for deployment: " + pod.ObjectMeta.GetLabels()[utils.APP])
+						return err
+					}
+				}
+			}
+		}
+	}
+	return err
+}
+
 func createMissingDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingDeployments []measurementv1alpha1.Server) error {
 	for _, server := range missingDeployments {
 		logger.Info("creating server deployment")
-		deploymentName := getObjectName(measurement, &server)
+		deploymentName := getServerObjectsName(measurement, server)
 		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port)
 
 		// for k8s garbage collection
@@ -192,7 +219,7 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 	for _, server := range desiredServers {
 		exists := false
 		for _, deployment := range currentDeploys.Items {
-			if deployment.Name == (getObjectName(measurement, server)) {
+			if deployment.Name == (getServerObjectsName(measurement, server)) {
 				exists = true
 				// deployment initial conditions are empty
 				if deployment.Status.Conditions == nil {
@@ -217,4 +244,8 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 		}
 	}
 	return missingDeployments, deploysInProgress, err
+}
+
+func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
+	return measurement.Name + "-" + server.Node
 }

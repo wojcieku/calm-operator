@@ -39,17 +39,9 @@ type Client struct {
 	MetricsAggregator string `json:"metricsAggregator,omitempty"`
 }
 
-type DeployableObject interface {
-	GetNodeName() string
-}
-
-func (s Server) GetNodeName() string {
-	return s.Node
-}
-
-func (c Client) GetNodeName() string {
-	return c.Node
-}
+//func (c *Client) String() string {
+//	return fmt.Sprintf("Client: {Node: %s, IPAddress: %s, Port: %s, Interval: %s, Duration: %s", c.Node, c.IPAddress, strconv.Itoa(c.Port), strconv.Itoa(c.Interval), strconv.Itoa(c.Duration))
+//}
 
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement
 type LatencyMeasurementSpec struct {

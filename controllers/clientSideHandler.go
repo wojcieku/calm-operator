@@ -39,11 +39,6 @@ func (handler *ClientSideHandler) HandleLatencyMeasurement(ctx context.Context, 
 	if len(missingClients) == 0 && !inProgress && measurement.Status.State != SUCCESS {
 		logger.Info("All Jobs completed successfully")
 		updateStatusSuccess(ctx, measurement, r)
-	} else {
-		err = checkPodScheduleStatus(ctx, measurement, r, desiredClients)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
