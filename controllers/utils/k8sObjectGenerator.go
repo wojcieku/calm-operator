@@ -1,7 +1,7 @@
 package utils
 
-//TODO getService, getDeployment, getJob
 import (
+	"gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,6 +20,12 @@ const (
 	INTERVAL                = "INTERVAL"
 	DURATION                = "DURATION"
 	PORT                    = "PORT"
+	METRICS_AGGREGATOR      = "METRICS_AGGREGATOR"
+	MEASUREMENT_ID          = "MEASUREMENT_ID"
+	SRC_NODE                = "SRC_NODE"
+	TARGET_NODE             = "TARGET_NODE"
+	SRC_CLUSTER             = "SRC_CLUSTER"
+	TARGET_CLUSTER          = "TARGET_CLUSTER"
 	APP                     = "app"
 )
 
@@ -93,8 +99,8 @@ func PrepareServiceForLatencyServer(svcName string, label string, deploymentName
 	return svc
 }
 
-func PrepareJobForLatencyClient(jobName string, nodeName string, label string, ip string, port int, interval int, duration int) *batchv1.Job {
-	envs := prepareEnvs(ip, port, interval, duration)
+func PrepareJobForLatencyClient(jobName string, nodeName string, label string, client v1alpha1.Client, measurementID string) *batchv1.Job {
+	envs := prepareEnvs(client, measurementID)
 
 	var backOffLimit int32 = 0
 	job := &batchv1.Job{
@@ -128,11 +134,17 @@ func PrepareJobForLatencyClient(jobName string, nodeName string, label string, i
 	return job
 }
 
-func prepareEnvs(ip string, port int, interval int, duration int) []corev1.EnvVar {
+func prepareEnvs(client v1alpha1.Client, measurementID string) []corev1.EnvVar {
 	envs := []corev1.EnvVar{}
-	envs = append(envs, corev1.EnvVar{Name: ADDRESS, Value: ip})
-	envs = append(envs, corev1.EnvVar{Name: PORT, Value: strconv.Itoa(port)})
-	envs = append(envs, corev1.EnvVar{Name: INTERVAL, Value: strconv.Itoa(interval)})
-	envs = append(envs, corev1.EnvVar{Name: DURATION, Value: strconv.Itoa(duration)})
+	envs = append(envs, corev1.EnvVar{Name: ADDRESS, Value: client.IPAddress})
+	envs = append(envs, corev1.EnvVar{Name: PORT, Value: strconv.Itoa(client.Port)})
+	envs = append(envs, corev1.EnvVar{Name: INTERVAL, Value: strconv.Itoa(client.Interval)})
+	envs = append(envs, corev1.EnvVar{Name: DURATION, Value: strconv.Itoa(client.Duration)})
+	envs = append(envs, corev1.EnvVar{Name: METRICS_AGGREGATOR, Value: client.MetricsAggregatorURL})
+	envs = append(envs, corev1.EnvVar{Name: MEASUREMENT_ID, Value: measurementID})
+	envs = append(envs, corev1.EnvVar{Name: SRC_NODE, Value: client.ClientNodeName})
+	envs = append(envs, corev1.EnvVar{Name: TARGET_NODE, Value: client.ServerNodeName})
+	envs = append(envs, corev1.EnvVar{Name: SRC_CLUSTER, Value: client.ClientClusterName})
+	envs = append(envs, corev1.EnvVar{Name: TARGET_CLUSTER, Value: client.ServerClusterName})
 	return envs
 }

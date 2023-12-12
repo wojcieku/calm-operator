@@ -31,17 +31,16 @@ type Server struct {
 }
 
 type Client struct {
-	Node              string `json:"node,omitempty"`
-	IPAddress         string `json:"ipAddress,omitempty"`
-	Port              int    `json:"port,omitempty"`
-	Interval          int    `json:"interval,omitempty"`
-	Duration          int    `json:"duration,omitempty"`
-	MetricsAggregator string `json:"metricsAggregator,omitempty"`
+	IPAddress            string `json:"ipAddress,omitempty"`
+	Port                 int    `json:"port,omitempty"`
+	Interval             int    `json:"interval,omitempty"`
+	Duration             int    `json:"duration,omitempty"`
+	MetricsAggregatorURL string `json:"metricsAggregatorURL,omitempty"`
+	ClientNodeName       string `json:"clientNodeName,omitempty"`
+	ServerNodeName       string `json:"serverNodeName,omitempty"`
+	ClientClusterName    string `json:"clientClusterName,omitempty"`
+	ServerClusterName    string `json:"serverClusterName,omitempty"`
 }
-
-//func (c *Client) String() string {
-//	return fmt.Sprintf("Client: {Node: %s, IPAddress: %s, Port: %s, Interval: %s, Duration: %s", c.Node, c.IPAddress, strconv.Itoa(c.Port), strconv.Itoa(c.Interval), strconv.Itoa(c.Duration))
-//}
 
 // LatencyMeasurementSpec defines the desired state of LatencyMeasurement
 type LatencyMeasurementSpec struct {
