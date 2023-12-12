@@ -39,18 +39,24 @@ spec:
               clients:
                 items:
                   properties:
+                    clientClusterName:
+                      type: string
+                    clientNodeName:
+                      type: string
                     duration:
                       type: integer
                     interval:
                       type: integer
                     ipAddress:
                       type: string
-                    metricsAggregator:
-                      type: string
-                    node:
+                    metricsAggregatorURL:
                       type: string
                     port:
                       type: integer
+                    serverClusterName:
+                      type: string
+                    serverNodeName:
+                      type: string
                   type: object
                 type: array
               servers:
