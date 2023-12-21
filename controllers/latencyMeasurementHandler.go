@@ -13,6 +13,7 @@ const (
 	REASON_COMPLETE = "NewReplicaSetAvailable"
 	PENDING         = "Pending"
 	UNSCHEDULABLE   = "Unschedulable"
+	K8S_ARCH        = "kubernetes.io/arch"
 )
 
 type LatencyMeasurementHandler interface {

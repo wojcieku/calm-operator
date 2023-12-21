@@ -167,14 +167,21 @@ func checkServerPodsScheduleStatus(ctx context.Context, measurement *measurement
 
 func createMissingDeployments(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler, missingDeployments []measurementv1alpha1.Server) error {
 	for _, server := range missingDeployments {
+		node := &corev1.Node{}
+		err := r.Get(ctx, client.ObjectKey{Name: server.Node}, node)
+		if err != nil {
+			logger.Error(err, "Error during getting node details")
+			return err
+		}
+		logger.Info("Node's arch: " + node.GetObjectMeta().GetLabels()[K8S_ARCH])
 		logger.Info("creating server deployment")
 		deploymentName := getServerObjectsName(measurement, server)
-		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port)
+		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port, node.GetObjectMeta().GetLabels()[K8S_ARCH])
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, depl, r.Scheme)
 
-		err := r.Create(ctx, depl)
+		err = r.Create(ctx, depl)
 		if err != nil {
 			logger.Error(err, "Error during server deployment creation")
 			return err

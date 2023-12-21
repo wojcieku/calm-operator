@@ -52,6 +52,7 @@ type LatencyMeasurementReconciler struct {
 //+kubebuilder:rbac:groups=apps,namespace=calm-operator-system,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=batch,namespace=calm-operator-system,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,namespace=calm-operator-system,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,namespace=calm-operator-system,resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
