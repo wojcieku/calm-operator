@@ -15,7 +15,7 @@ import (
 type ServerSideHandler struct{}
 
 // HandleLatencyMeasurement - create Deployments and Services objects based on Measurement description.
-// Objects' names are created according to pattern: Measurement.Name-NodeName.
+// Objects' names are created according to pattern: Measurement.Name-NodeName-server.
 // If creation fails at any stage, error is returned and for further handle.
 // Objects are grouped with labels ["measurement" : LatencyMeasurement.Name].
 func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
@@ -247,5 +247,5 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 }
 
 func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
-	return measurement.Name + "-" + server.Node
+	return measurement.Name + "-" + server.Node + "-server"
 }

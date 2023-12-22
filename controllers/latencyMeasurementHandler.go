@@ -5,7 +5,7 @@ import (
 	measurementv1alpha1 "gitlab-stud.elka.pw.edu.pl/jwojciec/calm-operator.git/api/v1alpha1"
 )
 
-// deployment status enum
+// Kubernetes object constants
 const (
 	PROGRESSING     = "Progressing"
 	TRUE            = "True"
