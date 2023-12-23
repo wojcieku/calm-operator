@@ -108,9 +108,16 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 	if err != nil {
 		return false, err
 	}
-
+	logger.Info("Listing current deployments: ")
+	for _, deployment := range currentDeploys.Items {
+		logger.Info(deployment.Name)
+	}
 	// verify - compare desired state with actual state
 	missingDeployments, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
+	logger.Info("Listing missing deployments: ")
+	for _, deployment := range missingDeployments {
+		logger.Info(deployment.Node + deployment.IPAddress)
+	}
 	if err != nil {
 		return false, err
 	}
