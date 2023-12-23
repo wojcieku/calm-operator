@@ -63,11 +63,13 @@ spec:
                 items:
                   description: LatencyMeasurementSpec nested structs
                   properties:
-                    ipAddress:
+                    clientNodeName:
                       type: string
-                    node:
+                    serverIPAddress:
                       type: string
-                    port:
+                    serverNodeName:
+                      type: string
+                    serverPort:
                       type: integer
                   type: object
                 type: array
