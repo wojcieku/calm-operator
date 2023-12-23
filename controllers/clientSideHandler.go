@@ -132,5 +132,5 @@ func checkClientPodsScheduleStatus(ctx context.Context, measurement *measurement
 }
 
 func getClientObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, client measurementv1alpha1.Client) string {
-	return measurement.Name + "-" + client.ClientNodeName + "-client"
+	return measurement.Name + "-" + client.ClientNodeName
 }

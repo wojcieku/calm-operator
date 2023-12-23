@@ -15,7 +15,7 @@ import (
 type ServerSideHandler struct{}
 
 // HandleLatencyMeasurement - create Deployments and Services objects based on Measurement description.
-// Objects' names are created according to pattern: Measurement.Name-NodeName-server.
+// Objects' names are created according to pattern: Measurement.Name-NodeName.
 // If creation fails at any stage, error is returned and for further handle.
 // Objects are grouped with labels ["measurement" : LatencyMeasurement.Name].
 func (handler *ServerSideHandler) HandleLatencyMeasurement(ctx context.Context, measurement *measurementv1alpha1.LatencyMeasurement, r *LatencyMeasurementReconciler) error {
@@ -173,7 +173,8 @@ func createMissingDeployments(ctx context.Context, measurement *measurementv1alp
 			logger.Error(err, "Error during getting node details")
 			return err
 		}
-		logger.Info("Creating server deployment")
+		logger.Info("Node's arch: " + node.GetObjectMeta().GetLabels()[K8S_ARCH])
+		logger.Info("creating server deployment")
 		deploymentName := getServerObjectsName(measurement, server)
 		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port, node.GetObjectMeta().GetLabels()[K8S_ARCH])
 
@@ -253,5 +254,5 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 }
 
 func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
-	return measurement.Name + "-" + server.Node + "-server"
+	return measurement.Name + "-" + server.Node
 }
