@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 type ClientSideHandler struct {
@@ -57,7 +58,12 @@ func createMissingJobs(ctx context.Context, measurement *measurementv1alpha1.Lat
 		err := r.Create(ctx, job)
 		if err != nil {
 			logger.Error(err, "Error during client job creation")
-			return err
+			// Events arrive one per object change and k8s server may process all creation requests
+			// after listing current deployments, so it may already exist - assuming operator is namespace scoped and
+			// names are unique - that's ok
+			if !strings.Contains(err.Error(), "already exists") {
+				return err
+			}
 		}
 	}
 	return nil

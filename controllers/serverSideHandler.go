@@ -10,6 +10,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+	"strings"
 )
 
 type ServerSideHandler struct{}
@@ -76,7 +77,13 @@ func createMissingServices(ctx context.Context, measurement *measurementv1alpha1
 		err := r.Create(ctx, svc)
 		if err != nil {
 			logger.Error(err, "Error during server deployment creation")
-			return err
+
+			// Events arrive one per object change and k8s server may process all creation requests
+			// after listing current deployments, so it may already exist - assuming operator is namespace scoped and
+			// names are unique - that's ok
+			if !strings.Contains(err.Error(), "already exists") {
+				return err
+			}
 		}
 	}
 	return nil
@@ -184,7 +191,13 @@ func createMissingDeployments(ctx context.Context, measurement *measurementv1alp
 		err := r.Create(ctx, depl)
 		if err != nil {
 			logger.Error(err, "Error during server deployment creation")
-			return err
+
+			// Events arrive one per object change and k8s server may process all creation requests
+			// after listing current deployments, so it may already exist - assuming operator is namespace scoped and
+			// names are unique - that's ok
+			if !strings.Contains(err.Error(), "already exists") {
+				return err
+			}
 		}
 	}
 	return nil
