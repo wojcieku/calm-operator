@@ -69,7 +69,7 @@ func createMissingServices(ctx context.Context, measurement *measurementv1alpha1
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
 		serviceName := getServerObjectsName(measurement, server)
-		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.IPAddress, server.Port)
+		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.ServerIPAddress, server.ServerPort)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, svc, r.Scheme)
@@ -123,7 +123,7 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 	missingDeployments, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
 	logger.Info("Listing missing deployments: ")
 	for _, deployment := range missingDeployments {
-		logger.Info(deployment.Node + deployment.IPAddress)
+		logger.Info(deployment.ServerNodeName + deployment.ServerIPAddress)
 	}
 	if err != nil {
 		return false, err
@@ -183,7 +183,7 @@ func createMissingDeployments(ctx context.Context, measurement *measurementv1alp
 	for _, server := range missingDeployments {
 		logger.Info("creating server deployment")
 		deploymentName := getServerObjectsName(measurement, server)
-		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.Node, server.Port)
+		depl := utils.PrepareLatencyServerDeployment(deploymentName, measurement.Name, server.ServerNodeName, server.ServerPort)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, depl, r.Scheme)
@@ -267,5 +267,5 @@ func verifyDeployments(measurement *measurementv1alpha1.LatencyMeasurement, desi
 }
 
 func getServerObjectsName(measurement *measurementv1alpha1.LatencyMeasurement, server measurementv1alpha1.Server) string {
-	return measurement.Name + "-" + server.Node + "-server"
+	return measurement.Name + "-" + server.ClientNodeName + "-to-" + server.ServerNodeName + "-server"
 }
