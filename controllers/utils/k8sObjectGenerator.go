@@ -29,7 +29,7 @@ const (
 	APP                     = "app"
 )
 
-func PrepareLatencyServerDeployment(deploymentName string, label string, nodeName string, port int, arch string) *appsv1.Deployment {
+func PrepareLatencyServerDeployment(deploymentName string, label string, nodeName string, port int) *appsv1.Deployment {
 	var replicas int32 = 1
 
 	deployment := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
@@ -54,7 +54,7 @@ func PrepareLatencyServerDeployment(deploymentName string, label string, nodeNam
 					Containers: []corev1.Container{
 						{
 							Name:  "probe-server",
-							Image: SERVER_IMAGE + ":" + arch,
+							Image: SERVER_IMAGE,
 							Ports: []corev1.ContainerPort{
 								{
 									Protocol:      corev1.ProtocolUDP,
