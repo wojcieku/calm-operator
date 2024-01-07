@@ -47,9 +47,9 @@ spec:
                       type: integer
                     interval:
                       type: integer
-                    ipAddress:
-                      type: string
                     metricsAggregatorAddress:
+                      type: string
+                    serverIP:
                       type: string
                     serverNodeName:
                       type: string
@@ -65,7 +65,7 @@ spec:
                   properties:
                     clientNodeName:
                       type: string
-                    serverIPAddress:
+                    serverIP:
                       type: string
                     serverNodeName:
                       type: string

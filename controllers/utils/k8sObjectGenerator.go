@@ -136,7 +136,7 @@ func PrepareJobForLatencyClient(jobName string, nodeName string, label string, c
 
 func prepareEnvs(client v1alpha1.Client, measurementID string) []corev1.EnvVar {
 	envs := []corev1.EnvVar{}
-	envs = append(envs, corev1.EnvVar{Name: ADDRESS, Value: client.IPAddress})
+	envs = append(envs, corev1.EnvVar{Name: ADDRESS, Value: client.ServerIP})
 	envs = append(envs, corev1.EnvVar{Name: PORT, Value: strconv.Itoa(client.ServerPort)})
 	envs = append(envs, corev1.EnvVar{Name: INTERVAL, Value: strconv.Itoa(client.Interval)})
 	envs = append(envs, corev1.EnvVar{Name: DURATION, Value: strconv.Itoa(client.Duration)})

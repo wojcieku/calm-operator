@@ -69,7 +69,7 @@ func createMissingServices(ctx context.Context, measurement *measurementv1alpha1
 	for _, server := range missingServices {
 		logger.Info("creating service for server")
 		serviceName := getServerObjectsName(measurement, server)
-		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.ServerIPAddress, server.ServerPort)
+		svc := utils.PrepareServiceForLatencyServer(serviceName, measurement.Name, serviceName, server.ServerIP, server.ServerPort)
 
 		// for k8s garbage collection
 		_ = ctrl.SetControllerReference(measurement, svc, r.Scheme)
@@ -123,7 +123,7 @@ func handleServerDeployments(ctx context.Context, measurement *measurementv1alph
 	missingDeployments, deploysInProgress, err := verifyDeployments(measurement, desiredServers, currentDeploys)
 	logger.Info("Listing missing deployments: ")
 	for _, deployment := range missingDeployments {
-		logger.Info(deployment.ServerNodeName + deployment.ServerIPAddress)
+		logger.Info(deployment.ServerNodeName + deployment.ServerIP)
 	}
 	if err != nil {
 		return false, err

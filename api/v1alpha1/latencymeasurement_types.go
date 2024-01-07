@@ -25,14 +25,14 @@ import (
 
 // LatencyMeasurementSpec nested structs
 type Server struct {
-	ClientNodeName  string `json:"clientNodeName,omitempty"`
-	ServerNodeName  string `json:"serverNodeName,omitempty"`
-	ServerIPAddress string `json:"serverIPAddress,omitempty"`
-	ServerPort      int    `json:"serverPort,omitempty"`
+	ClientNodeName string `json:"clientNodeName,omitempty"`
+	ServerNodeName string `json:"serverNodeName,omitempty"`
+	ServerIP       string `json:"serverIP,omitempty"`
+	ServerPort     int    `json:"serverPort,omitempty"`
 }
 
 type Client struct {
-	IPAddress                string `json:"ipAddress,omitempty"`
+	ServerIP                 string `json:"serverIP,omitempty"`
 	ServerPort               int    `json:"serverPort,omitempty"`
 	Interval                 int    `json:"interval,omitempty"`
 	Duration                 int    `json:"duration,omitempty"`
