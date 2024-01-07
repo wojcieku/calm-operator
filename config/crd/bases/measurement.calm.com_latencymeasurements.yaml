@@ -39,9 +39,9 @@ spec:
               clients:
                 items:
                   properties:
-                    clientClusterName:
-                      type: string
                     clientNodeName:
+                      type: string
+                    clientSideClusterName:
                       type: string
                     duration:
                       type: integer
@@ -49,13 +49,13 @@ spec:
                       type: integer
                     ipAddress:
                       type: string
-                    metricsAggregatorURL:
-                      type: string
-                    port:
-                      type: integer
-                    serverClusterName:
+                    metricsAggregatorAddress:
                       type: string
                     serverNodeName:
+                      type: string
+                    serverPort:
+                      type: integer
+                    serverSideClusterName:
                       type: string
                   type: object
                 type: array
