@@ -137,14 +137,14 @@ func PrepareJobForLatencyClient(jobName string, nodeName string, label string, c
 func prepareEnvs(client v1alpha1.Client, measurementID string) []corev1.EnvVar {
 	envs := []corev1.EnvVar{}
 	envs = append(envs, corev1.EnvVar{Name: ADDRESS, Value: client.IPAddress})
-	envs = append(envs, corev1.EnvVar{Name: PORT, Value: strconv.Itoa(client.Port)})
+	envs = append(envs, corev1.EnvVar{Name: PORT, Value: strconv.Itoa(client.ServerPort)})
 	envs = append(envs, corev1.EnvVar{Name: INTERVAL, Value: strconv.Itoa(client.Interval)})
 	envs = append(envs, corev1.EnvVar{Name: DURATION, Value: strconv.Itoa(client.Duration)})
-	envs = append(envs, corev1.EnvVar{Name: METRICS_AGGREGATOR, Value: client.MetricsAggregatorURL})
+	envs = append(envs, corev1.EnvVar{Name: METRICS_AGGREGATOR, Value: client.MetricsAggregatorAddress})
 	envs = append(envs, corev1.EnvVar{Name: MEASUREMENT_ID, Value: measurementID})
 	envs = append(envs, corev1.EnvVar{Name: SRC_NODE, Value: client.ClientNodeName})
 	envs = append(envs, corev1.EnvVar{Name: TARGET_NODE, Value: client.ServerNodeName})
-	envs = append(envs, corev1.EnvVar{Name: SRC_CLUSTER, Value: client.ClientClusterName})
-	envs = append(envs, corev1.EnvVar{Name: TARGET_CLUSTER, Value: client.ServerClusterName})
+	envs = append(envs, corev1.EnvVar{Name: SRC_CLUSTER, Value: client.ClientSideClusterName})
+	envs = append(envs, corev1.EnvVar{Name: TARGET_CLUSTER, Value: client.ServerSideClusterName})
 	return envs
 }
